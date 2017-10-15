@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>QuickAuction</title>
+    <link rel="stylesheet" href="bootstrap.min.css">
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+    <ul class="container">
+        <li class="auctionContainer">
+            <div class="bidContainer">
+                <div class="winningBid">0$</div>
+                <ul class="bidList"></ul>
+            </div>
+            <input class="inputBid" placeholder="Enter your bid and press ENTER / entrez votre offre et appuyez sur ENTRÉE..." />
+        </li>
+        <li class="loginContainer">
+            <div class="loginBackground">
+                <h3 class="usernamePromptMessage">What's your e-mail / Quel est votre courriel?</h3>
+                <input class="inputUsername" type="text" maxlength="30" />
+            </div>
+        </li>
+    </ul>
+</body>
+</html>
+
+<script src="jquery-3.2.1.min.js"></script>
+<script src="bootstrap.min.js"></script>
+<script src="bootstrap-notify.min.js"></script>
+<script src="socket.io/socket.io.js"></script>
+<script src="client.js"></script>
