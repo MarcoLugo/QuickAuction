@@ -1,7 +1,7 @@
 /*
 Title: QuickAuction
 Author: Marco Lugo
-Version 0.01 - October 15th, 2017
+Version 0.02 - October 21st, 2017
 
 Quick and simple to use program to run auction. You just need to launch it on
 a given port and give the address and port to auction participants. Please note
@@ -17,6 +17,8 @@ Sessions can be restored by adding the log filename as an additional parameter, 
 Users, presumably the admin, can send plain-text messages as bids by preceeding the message
 in the bid input field with x00. A bid such as "x005 minutes left!" would be shown all 
 participants as "5 minutes left!".
+
+Version 0.02 adds XSS prevention for the username as well.
 */
 
 var express = require('express');
@@ -67,12 +69,13 @@ io.on('connection', function(socket){
             timestamp = new Date().getTime();
             isException = (data.indexOf('x00') == 0) ? true : false;
             message = cleanMsg(data); //Clean the message
-            io.emit('addMsg', { username: socket.username, msg: message, exception: isException }); //Send bid (or message) to everyone
+            username = cleanUsername(socket.username); //Apply XSS prevention to the username
+            io.emit('addMsg', { username: username, msg: message, exception: isException }); //Send bid (or message) to everyone
         
             //Save message, bid and write to log file
-            msgDatabase.push([timestamp, clientIp, socket.username, message, isException]);
+            msgDatabase.push([timestamp, clientIp, username, message, isException]);
             if(isException === false) bidDatabase.push(parseFloat(data));
-            fs.appendFile('auction-history-'+initTime+'-'+port+'.txt', timestamp+'§'+clientIp+'§'+socket.username+'§'+message+'\r\n', function(err){ if(err) throw err; });
+            fs.appendFile('auction-history-'+initTime+'-'+port+'.txt', timestamp+'§'+clientIp+'§'+username+'§'+message+'\r\n', function(err){ if(err) throw err; });
             break;
         case 'notHighEnough':  socket.emit('notHighEnough');  break; //Tell client that the bid was not high enough
         default:  socket.emit('bidRejected'); //Tell client that the bid was not in right format
@@ -125,13 +128,23 @@ function isMsgAcceptable(msg){
     return 'yes';
 }
 
+function preventXSS(string){
+    string = string.replace(/</g, '&lt'); //To avoid the most common XSS attacks, otherwise injection would be possible with x00<script>alert('I am XSS');</script> for bid or direction injection with username, for example
+    string = string.replace(/>/g, '&gt'); //Idem
+    return string;
+}
+
 function cleanMsg(msg){
     msg = msg.replace('x00', '');
     msg = msg.replace(',', '.');
     msg = msg.replace('$', '');
-    msg = msg.replace(/</g, '&lt'); //To avoid the most common XSS attacks, otherwise injection would be possible with x00<script>alert('I am XSS');</script>
-    msg = msg.replace(/>/g, '&gt'); //Idem
+    msg = preventXSS(msg);
     return msg;
+}
+
+function cleanUsername(username){
+    username = preventXSS(username);
+    return username;
 }
 
 function restoreSession(fromTextFile){
